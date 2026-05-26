@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['type', 'warehouse_id', 'user_id', 'supplier_id', 'reference_no', 'status'])]
 class Transaction extends Model
 {
+    use Auditable;
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);

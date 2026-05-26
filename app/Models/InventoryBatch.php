@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['product_id', 'warehouse_id', 'transaction_id', 'original_qty', 'remaining_qty', 'unit_cost'])]
 class InventoryBatch extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

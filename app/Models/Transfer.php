@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['from_warehouse_id', 'to_warehouse_id', 'user_id', 'reference_no', 'status', 'shipped_at', 'received_at'])]
 class Transfer extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [
