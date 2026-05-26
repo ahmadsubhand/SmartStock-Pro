@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Auth\AccountActivationController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +22,10 @@ Route::middleware('signed')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users/create', [UserController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::resource('categories', CategoryController::class)
+        ->except(['create', 'edit']);
+    Route::resource('warehouses', WarehouseController::class)
+        ->except(['create', 'edit']);
     // ... route CRUD master data lainnya
 });
 
