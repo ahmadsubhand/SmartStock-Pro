@@ -138,3 +138,56 @@ Sistem menggunakan PostgreSQL 16 sebagai RDBMS utama karena memiliki dukungan tr
 12. **Docker (Containerization Platform)**: Digunakan untuk menciptakan environment development dan deployment yang konsisten agar aplikasi dapat berjalan stabil di berbagai lingkungan server.
 
 13. **Git (Version Control System)**: Digunakan untuk mengelola versioning source code, kolaborasi tim pengembang, pelacakan perubahan kode, rollback versi aplikasi, serta mendukung proses deployment dan pembaruan fitur SmartStock Pro secara terstruktur dan aman.
+
+---
+
+## 3.3 ERD (Entity Reational Database)
+
+### 1. Domain Autentikasi & Otorisasi (RBAC)
+Tabel-tabel ini menangani akses pengguna dan pengaturan hak istimewa (*Role-Based Access Control*).
+
+* **`users`**: Menyimpan data akun pengguna, kredensial login, status aktif/non-aktif, serta rekaman waktu login terakhir.
+* **`roles`**: Mendefinisikan peran yang ada dalam sistem (contoh: Super Admin, Manajer Gudang, Staff Operasional).
+* **`permissions`**: Mendefinisikan hak akses spesifik atau tindakan yang boleh dilakukan (contoh: `create-product`, `approve-transfer`).
+* **`model_has_roles`**: Tabel pivot yang menghubungkan pengguna (user) dengan peran (role) tertentu.
+* **`role_has_permissions`**: Tabel pivot yang menghubungkan sebuah peran (role) dengan daftar hak akses (permissions) yang dimilikinya.
+* **`sessions`** & **`password_reset_tokens`**: Tabel sistem Laravel untuk mengelola *session* (mencegah multi-login / mengatur *timeout*) dan token reset *password*.
+
+### 2. Domain Master Data
+Tabel-tabel ini menyimpan data referensi yang digunakan sebagai landasan untuk transaksi operasional.
+
+* **`warehouses`**: Menyimpan daftar fasilitas gudang beserta informasi alamat, status aktif, dan titik koordinat (Latitude/Longitude) untuk ditampilkan di Peta/Leaflet.
+* **`categories`**: Menyimpan data klasifikasi atau pengelompokan untuk produk.
+* **`suppliers`**: Menyimpan informasi entitas atau vendor yang memasok barang ke dalam sistem.
+
+### 3. Domain Produk
+Tabel-tabel ini mengelola katalog barang yang ada di sistem.
+
+* **`products`**: Menyimpan data inti/katalog barang (SKU, nama, deskripsi) serta batas peringatan stok (`min_stock_level`).
+* **`product_images`**: Menyimpan *path* atau URL ke file gambar dari suatu produk untuk ditampilkan pada galeri antarmuka pengguna.
+
+### 4. Domain Transaksi & Mutasi Barang
+Tabel-tabel ini merekam semua pergerakan (masuk, keluar, pindah) dari inventaris.
+
+* **`transactions`**: Mencatat *header* dari aktivitas mutasi barang di satu gudang, baik itu barang masuk (`in`), barang keluar (`out`), atau penyesuaian stok (`adjustment`).
+* **`transaction_details`**: Menyimpan daftar barang, kuantitas, dan harga modal (jika masuk) untuk setiap transaksi.
+* **`transfers`**: Mencatat proses pergerakan barang antar-gudang (misal: Gudang A ke Gudang B), termasuk melacak status perjalanannya (`pending`, `in_transit`, `completed`).
+* **`transfer_details`**: Menyimpan rincian item dan jumlah barang yang dipindahkan dalam sebuah *transfer*.
+
+### 5. Domain Inventaris & Stok (Core WMS)
+Tabel-tabel ini menangani ketersediaan barang aktual dan perhitungan nilai valuasi.
+
+* **`inventory_batches`**: Jantung dari sistem metode *First In First Out* (FIFO) atau LIFO. Setiap barang masuk akan menjadi satu baris (batch) di sini. Tabel ini melacak harga modal awal dan secara perlahan mengurangi `remaining_qty` setiap kali ada barang keluar.
+* **`stock_summaries`**: Berfungsi sebagai *Materialized View* atau tabel agregasi. Tabel ini menjumlahkan total keseluruhan barang per gudang untuk mempercepat tampilan di *Dashboard* tanpa harus menghitung ulang tabel *batch* yang jumlah datanya bisa jutaan baris.
+
+### 6. Domain Antrean (Queue) & Sistem Bawah Layar
+Tabel-tabel infrastruktur bawaan Laravel untuk memastikan performa yang tinggi.
+
+* **`jobs`**, **`job_batches`**, **`failed_jobs`**: Digunakan oleh Laravel Queue/Worker. Berfungsi sebagai antrean tugas-tugas berat agar berjalan secara paralel (seperti sinkronisasi antar-gudang, *batch import* CSV, dan *generate* PDF laporan).
+* **`cache`**, **`cache_locks`**: Menyimpan *cache* sistem dan mengelola penguncian (*locking*) proses agar tidak terjadi *race condition* atau data ganda saat beberapa *worker* berjalan di waktu bersamaan.
+
+### 7. Domain Log & Notifikasi
+Tabel-tabel untuk kebutuhan audit dan pemberian peringatan.
+
+* **`audit_logs`**: Merekam jejak setiap perubahan data (siapa yang mengubah, kapan, perubahan nilai sebelum vs sesudah). Sangat krusial untuk pelacakan jika terjadi selisih stok.
+* **`notifications`**: Menyimpan pesan-pesan penting dari sistem untuk dikirim/ditampilkan ke pengguna (*in-app notification*), seperti saat ada produk yang stoknya sudah menyentuh batas minimum.
