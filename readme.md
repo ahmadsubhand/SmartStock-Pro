@@ -8,7 +8,7 @@ SmartStock Pro adalah Sistem Manajemen Gudang (*Warehouse Management System*) ti
 
 - **Backend:** Laravel 13 (PHP 8.5+)
 - **Frontend:** React 19, Inertia.js, TailwindCSS, Shadcn UI
-- **Database:** PostgreSQL (Relational) & Redis (Cache & Queue)
+- **Database:** PostgreSQL (Relational)
 
 ---
 
@@ -16,7 +16,7 @@ SmartStock Pro adalah Sistem Manajemen Gudang (*Warehouse Management System*) ti
 
 Sebelum menginstal aplikasi ini, pastikan sistem Anda (Lokal/Server) sudah terinstal:
 
-1. **PHP** (Minimal versi 8.2) beserta ekstensi:
+1. **PHP** (Minimal versi 8.5) beserta ekstensi:
    - `pdo_pgsql`
    - `mbstring`
    - `xml`
@@ -26,9 +26,9 @@ Sebelum menginstal aplikasi ini, pastikan sistem Anda (Lokal/Server) sudah terin
 
 2. **Composer** (*PHP Package Manager*)
 
-3. **Node.js** (Minimal versi 18.x) & **NPM/Yarn**
+3. **Node.js** (Minimal versi 22.x) & **NPM/Yarn**
 
-4. **PostgreSQL** (Minimal versi 13+)
+4. **PostgreSQL** (Minimal versi 16)
 
 5. **Git**
 
@@ -74,7 +74,7 @@ Salin template konfigurasi bawaan:
 cp .env.example .env
 ```
 
-Buka file `.env`, lalu sesuaikan konfigurasi database dan Redis:
+Buka file `.env`, lalu sesuaikan konfigurasi database, mailer, dan akun super admin. Berikut parameter yang perlu disesuaikan:
 
 ```env
 DB_CONNECTION=pgsql
@@ -83,6 +83,18 @@ DB_PORT=5432
 DB_DATABASE=smartstock_pro
 DB_USERNAME=postgres
 DB_PASSWORD=password_db_anda
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME="yourmail@mail.com"
+MAIL_PASSWORD="your app password"
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="yourmail@mail.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+ADMIN_EMAIL=admin@mail.com
+ADMIN_PASSWORD=12341234
 ```
 
 ---
@@ -138,41 +150,15 @@ http://localhost:8000
 
 ---
 
-# ⚙️ Menjalankan Queue Worker (Test)
-
-Sistem menggunakan *asynchronous processing* untuk:
-
-- Export laporan PDF/Excel
-- Pengiriman email aktivasi
-- Import data massal
-- Notifikasi stok minimum
-- Background jobs lainnya
-
-Jalankan queue worker pada terminal baru:
-
-```bash
-php artisan queue:work
-```
-Namun untuk development sudah termasuk dalam perintah `composer run dev`
-
----
-
 # 🔐 Akun Default (Super Admin)
 
-Setelah menjalankan:
 
-```bash
-php artisan migrate --seed
-```
-
-Anda dapat login menggunakan akun bawaan berikut:
+Login menggunakan akun yang sudah di atur dalam .env atau jika tidak mengatur gunakan default:
 
 | Field | Value |
 |---|---|
-| Email | `admin@wms.test` |
-| Password | `password123` |
-
-> Silakan segera ganti password setelah deployment production.
+| Email | `admin@mail.com` |
+| Password | `12341234` |
 
 ---
 

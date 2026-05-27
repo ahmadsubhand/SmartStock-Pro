@@ -14,6 +14,9 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $adminEmail = env('ADMIN_EMAIL', 'admin@mail.com');
+        $adminPassword = env('ADMIN_PASSWORD', '12341234');
+
         // 1. Buat Role Admin jika belum ada
         $adminRole = Role::firstOrCreate(
             ['name' => 'admin'],
@@ -22,10 +25,10 @@ class AdminUserSeeder extends Seeder
 
         // 2. Buat akun User Admin untuk testing
         $adminUser = User::firstOrCreate(
-            ['email' => 'admin@wms.test'], // Gunakan email ini untuk login
+            ['email' => $adminEmail], // Gunakan email ini untuk login
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('password123'), // Password default testing
+                'password' => Hash::make($adminPassword), // Password default testing
                 'is_active' => true, // Langsung diaktifkan
                 'email_verified_at' => now(),
             ]
