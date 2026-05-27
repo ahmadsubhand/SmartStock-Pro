@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TransactionController;
@@ -32,6 +33,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
     });
+    
+    // Rute Batch Import (UC6)
+    Route::get('/imports', [ImportController::class, 'index'])->name('imports.index');
+    Route::post('/imports', [ImportController::class, 'store'])->name('imports.store');
+    Route::get('/imports/batch/{batchId}', [ImportController::class, 'status'])->name('imports.status');
 
     // 2. UC3: MASTER DATA (Akses: Admin & Manajer Gudang)
     Route::middleware(['role:admin|manager'])->group(function () {
