@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Admin\TransferController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Auth\AccountActivationController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -18,8 +20,8 @@ Route::inertia('/', 'welcome')->name('home');
 // UC1: AUTENTIKASI & AKTIVASI AKUN
 // Akses: Pengguna terautentikasi & tautan signed URL
 // ========================================================
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+Route::middleware(['auth'])->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // Rute publik dengan signed URL untuk aktivasi akun
@@ -111,6 +113,22 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Akses: Admin
     // ========================================================
     Route::get('/system-monitor', [SystemMonitorController::class, 'index'])->name('system.monitor');
+});
+
+// ========================================================
+// UC9: NOTIFIKASI
+// Akses: Admin, Manager, Staff
+// ========================================================
+Route::middleware(['auth'])->prefix('admin')->group(function() {
+    // API Cepat untuk Notifikasi
+    Route::get('/notifications', function () {
+        return response()->json(Auth::user()->unreadNotifications);
+    })->name('notifications.index');
+
+    Route::post('/notifications/mark-as-read', function () {
+        Auth::user()->unreadNotifications->markAsRead();
+        return response()->json(['success' => true]);
+    })->name('notifications.markAllRead');
 });
 
 require __DIR__.'/settings.php';

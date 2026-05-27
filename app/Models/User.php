@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,5 +49,19 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->roles()->where('name', $role)->exists();
+    }
+
+    /**
+     * Scope untuk memfilter user berdasarkan satu atau banyak role.
+     * Memungkinkan kita memanggil User::role('admin') atau User::role(['admin', 'manager'])
+     */
+    public function scopeRole(Builder $query, string|array $roles)
+    {
+        // Pastikan input selalu berbentuk array meskipun hanya string tunggal yang dikirim
+        $roles = is_array($roles) ? $roles : [$roles];
+
+        return $query->whereHas('roles', function ($q) use ($roles) {
+            $q->whereIn('name', $roles);
+        });
     }
 }
