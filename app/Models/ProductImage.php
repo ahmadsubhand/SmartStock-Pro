@@ -22,4 +22,11 @@ class ProductImage extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        return asset('storage/' . $this->image_path);
+    }
 }

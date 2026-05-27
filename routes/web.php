@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Auth\AccountActivationController;
@@ -26,6 +27,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->except(['create', 'edit']);
     Route::resource('warehouses', WarehouseController::class)
         ->except(['create', 'edit']);
+    Route::resource('products', ProductController::class)
+        ->except(['create', 'edit']);
+    Route::delete('product-images/{image}', [ProductController::class, 'destroyImage'])
+        ->name('product-images.destroy');
     // ... route CRUD master data lainnya
 });
 
