@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\SystemMonitorController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\TransferController;
 use App\Http\Controllers\Admin\UserController;
@@ -104,6 +105,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('reports', [App\Http\Controllers\Admin\ReportController::class, 'store'])->name('reports.store');
         Route::get('reports/{document}/download', [App\Http\Controllers\Admin\ReportController::class, 'download'])->name('reports.download');
     });
+
+    // ========================================================
+    // UC8: MEMANTAU SERVER & LOG
+    // Akses: Admin
+    // ========================================================
+    Route::get('/system-monitor', [SystemMonitorController::class, 'index'])->name('system.monitor');
 });
 
 require __DIR__.'/settings.php';

@@ -16,7 +16,8 @@
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.7",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "spatie/laravel-activitylog": "^5.0"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
