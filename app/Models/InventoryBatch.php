@@ -7,7 +7,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['product_id', 'warehouse_id', 'transaction_id', 'original_qty', 'remaining_qty', 'unit_cost'])]
+#[Fillable([
+    'product_id', 
+    'warehouse_id', 
+    'transaction_id', 
+    'transfer_id', 
+    'original_qty', 
+    'remaining_qty', 
+    'unit_cost'
+])]
 class InventoryBatch extends Model
 {
     use Auditable;
@@ -34,5 +42,10 @@ class InventoryBatch extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(Transfer::class);
     }
 }

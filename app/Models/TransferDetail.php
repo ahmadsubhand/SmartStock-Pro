@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['transfer_id', 'product_id', 'qty'])]
+#[Fillable(['transfer_id', 'product_id', 'qty', 'unit_cost'])]
 class TransferDetail extends Model
 {
     public $timestamps = false;
@@ -15,6 +15,7 @@ class TransferDetail extends Model
     {
         return [
             'qty' => 'integer',
+            'unit_cost' => 'integer',
         ];
     }
 

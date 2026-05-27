@@ -112,6 +112,7 @@ class TransactionController extends Controller
                         'product_id' => $item['product_id'],
                         'warehouse_id' => $validated['warehouse_id'],
                         'transaction_id' => $transaction->id,
+                        'transfer_id' => null,
                         'original_qty' => $item['qty'],
                         'remaining_qty' => $item['qty'], // Sisa qty sama dengan original saat baru masuk
                         'unit_cost' => $item['unit_cost'],
