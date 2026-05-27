@@ -20,6 +20,12 @@
             "options": {
                 "tabWidth": 2
             }
+        },
+        {
+            "files": "**/*.tsx",
+            "options": {
+                "tabWidth": 2
+            }
         }
     ]
 }

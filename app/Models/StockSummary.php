@@ -30,4 +30,14 @@ class StockSummary extends Model
     {
         return $this->belongsTo(Warehouse::class);
     }
+
+    /**
+     * Override fungsi bawaan Laravel agar mendukung Composite Primary Key
+     * saat memanggil fungsi save(), update(), increment(), atau decrement().
+     */
+    protected function setKeysForSaveQuery($query)
+    {
+        return $query->where('product_id', $this->getAttribute('product_id'))
+            ->where('warehouse_id', $this->getAttribute('warehouse_id'));
+    }
 }
