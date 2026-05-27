@@ -22,33 +22,50 @@ Route::middleware('signed')->group(function () {
     Route::post('/activate-account/{user}', [AccountActivationController::class, 'update'])->name('account.activate.update');
 });
 
-// Rute Tertutup (Hanya untuk Admin)
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/users/create', [UserController::class, 'create'])->name('admin.users.create');
-    Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+// =================================================================
+// RUTE PANEL ADMIN & OPERASIONAL GUDANG
+// Kita menggunakan prefix 'admin' dan name 'admin.' untuk semua rute ini
+// =================================================================
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // 1. SUPER ADMIN ONLY (Kelola Pengguna)
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    });
 
-    Route::resource('categories', CategoryController::class)
-        ->except(['create', 'edit']);
+    // 2. UC3: MASTER DATA (Akses: Admin & Manajer Gudang)
+    Route::middleware(['role:admin|manager'])->group(function () {
+        Route::resource('categories', CategoryController::class)->except(['create', 'edit']);
+        Route::resource('warehouses', WarehouseController::class)->except(['create', 'edit']);
+        Route::resource('products', ProductController::class)->except(['create', 'edit']);
+        Route::delete('product-images/{image}', [ProductController::class, 'destroyImage'])->name('product-images.destroy');
+        Route::resource('suppliers', SupplierController::class)->except(['create', 'edit']);
+    });
 
-    Route::resource('warehouses', WarehouseController::class)
-        ->except(['create', 'edit']);
+    // 3. UC4: TRANSAKSI MASUK/KELUAR (Akses: Admin & Staf Gudang)
+    // Manajer hanya melihat via dashboard, staf yang mengeksekusi
+    Route::middleware(['role:admin|staff'])->group(function () {
+        Route::resource('transactions', TransactionController::class)->only(['index', 'create', 'store', 'show']);
+    });
 
-    Route::resource('products', ProductController::class)
-        ->except(['create', 'edit']);
-    Route::delete('product-images/{image}', [ProductController::class, 'destroyImage'])
-        ->name('product-images.destroy');
+    // 4. UC5: TRANSFER ANTAR GUDANG (Akses Dibagi Sesuai Wewenang)
+    
+    // b. Membuat/Kirim Transfer (Hak Akses: Staf & Admin)
+    Route::middleware(['role:admin|staff'])->group(function () {
+        Route::get('transfers/create', [TransferController::class, 'create'])->name('transfers.create');
+        Route::post('transfers', [TransferController::class, 'store'])->name('transfers.store');
+    });
 
-    Route::resource('suppliers', SupplierController::class)
-        ->except(['create', 'edit']);
+    // a. Semua (Admin, Manajer, Staf) boleh melihat daftar dan detail transfer
+    Route::middleware(['role:admin|manager|staff'])->group(function () {
+        Route::get('transfers', [TransferController::class, 'index'])->name('transfers.index');
+        Route::get('transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+    });
 
-    Route::resource('transactions', TransactionController::class)
-        ->only(['index', 'create', 'store', 'show']);
-
-    Route::resource('transfers', TransferController::class)
-        ->only(['index', 'create', 'store', 'show']);
-    Route::patch('transfers/{transfer}/receive', [TransferController::class, 'receive'])
-        ->name('transfers.receive');
-    // ... route CRUD master data lainnya
+    // c. Menerima Transfer / Verifikasi (Hak Akses: Manajer & Admin)
+    Route::middleware(['role:admin|manager'])->group(function () {
+        Route::patch('transfers/{transfer}/receive', [TransferController::class, 'receive'])->name('transfers.receive');
+    });
 });
 
 require __DIR__.'/settings.php';

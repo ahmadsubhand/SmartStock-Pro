@@ -20,8 +20,21 @@ class RoleMiddleware
             abort(401, 'Unauthorized');
         }
 
-        // Cek apakah user memiliki role yang disyaratkan di route
-        if (! $request->user()->hasRole($role)) {
+        // Pecah string "admin|manajer" menjadi array ['admin', 'manajer']
+        $roles = explode('|', $role);
+        
+        $hasAccess = false;
+
+        // Cek apakah user memiliki SETIDAKNYA SATU dari role yang disyaratkan
+        foreach ($roles as $r) {
+            if ($request->user()->hasRole($r)) {
+                $hasAccess = true;
+                break; // Jika ketemu satu yang cocok, langsung lolos
+            }
+        }
+
+        // Jika tidak ada satu pun role yang cocok
+        if (! $hasAccess) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 
