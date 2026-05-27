@@ -12,11 +12,41 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // 1. Tangkap parameter dari URL (Inertia Frontend)
+        $search = $request->input('search');
+        $categoryId = $request->input('category_id');
+        $sortField = $request->input('sort_field', 'created_at'); // Default sort
+        $sortDir = $request->input('sort_direction', 'desc');
+
+        // 2. Query Builder dengan Optimasi (Eager Loading)
+        $products = Product::with(['category', 'images'])
+            // Filter Pencarian (SKU atau Nama)
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $searchTerm = strtolower($search);
+                    $q->whereRaw('LOWER(name) LIKE ?', ["%{$searchTerm}%"])
+                      ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$searchTerm}%"]);
+                });
+            })
+            // Filter berdasarkan Kategori
+            ->when($categoryId, function ($query, $categoryId) {
+                $query->where('category_id', $categoryId);
+            })
+            // Sorting Dinamis
+            ->orderBy($sortField, $sortDir)
+            // 3. Paginasi (Misal 10 data per halaman)
+            ->paginate(10)
+            // withQueryString() sangat krusial agar saat pindah halaman (page=2), 
+            // parameter search dan filter tidak hilang dari URL.
+            ->withQueryString(); 
+
         return Inertia::render('admin/products/index', [
-            'products' => Product::with('category', 'images')->latest()->get(),
-            'categories' => Category::all()
+            'products' => $products,
+            'categories' => Category::all(),
+            // Kirim balik filter saat ini agar UI frontend tetap sinkron
+            'filters' => $request->only(['search', 'category_id', 'sort_field', 'sort_direction'])
         ]);
     }
 

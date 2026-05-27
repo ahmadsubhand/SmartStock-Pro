@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Pencil, Trash2, Plus, ImageIcon, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { Pencil, Trash2, Plus, ImageIcon, X, Search, ArrowUpDown } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -50,13 +50,72 @@ interface Product {
   images: ProductImage[];
 }
 
+interface PaginatedData<T> {
+  data: T[];
+  links: any[];
+  current_page: number;
+  last_page: number;
+}
+
+interface Filters {
+  search: string;
+  category_id: string;
+  sort_field: string;
+  sort_direction: string;
+}
+
 export default function ProductIndex({
   products,
   categories,
+  filters,
 }: {
-  products: Product[];
+  products: PaginatedData<Product>;
   categories: Category[];
+  filters: Filters,
 }) {
+  // STATE UNTUK FILTER & SORTING
+  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [selectedCategory, setSelectedCategory] = useState(filters.category_id || 'all');
+  const [sortField, setSortField] = useState(filters.sort_field || 'created_at');
+  const [sortDir, setSortDir] = useState(filters.sort_direction || 'desc');
+  
+  // Mencegah request pada render pertama
+  const isMounted = useRef(false);
+
+  // OPTIMASI: Efek Debounce untuk Pencarian & Filter
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      router.get('/admin/products', {
+        search: searchTerm,
+        category_id: selectedCategory === 'all' ? null : selectedCategory,
+        sort_field: sortField,
+        sort_direction: sortDir,
+      }, {
+        preserveState: true, // Jangan reset state modal dll
+        preserveScroll: true, // Jangan gulir layar ke atas
+        replace: true, // Ganti riwayat URL agar tidak menumpuk saat di-back
+      });
+    }, 300); // Tunggu 300ms setelah selesai mengetik/memilih
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, selectedCategory, sortField, sortDir]);
+
+  // Fungsi untuk menangani klik header tabel (Sorting)
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -144,218 +203,269 @@ export default function ProductIndex({
             <Plus className="mr-2 h-4 w-4" /> Tambah Produk
           </Button>
 
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
+          {/* BARIS OPTIMASI FILTER & PENCARIAN */}
+          <div className="mb-4 flex items-center justify-between gap-4 rounded-md border bg-white p-4 shadow-sm">
+            <div className="flex w-full max-w-sm items-center space-x-2">
+              <div className="relative w-full">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="text"
+                  placeholder="Cari SKU atau Nama Produk..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="flex w-full max-w-xs items-center space-x-2">
+              <Select 
+                value={selectedCategory} 
+                onValueChange={setSelectedCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter Kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kategori</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-          if (!open) {
-            reset(); setEditingProduct(null); 
-          } 
-        }}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
-          </DialogHeader>
-            {/* Tambahkan encType="multipart/form-data" */}
-            <form onSubmit={submit} className="space-y-4" encType="multipart/form-data">
-              <div>
-                <Label>Kategori</Label>
+          <Dialog open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
 
-                <Select
-                  value={data.category_id}
-                  onValueChange={(val) =>
-                    setData('category_id', val)
-                  }
-                >
-                  <SelectTrigger
+            if (!open) {
+              reset(); setEditingProduct(null); 
+            } 
+          }}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
+            </DialogHeader>
+              {/* Tambahkan encType="multipart/form-data" */}
+              <form onSubmit={submit} className="space-y-4" encType="multipart/form-data">
+                <div>
+                  <Label>Kategori</Label>
+
+                  <Select
+                    value={data.category_id}
+                    onValueChange={(val) =>
+                      setData('category_id', val)
+                    }
+                  >
+                    <SelectTrigger
+                      className={
+                        errors.category_id
+                          ? 'border-red-500'
+                          : ''
+                      }
+                    >
+                      <SelectValue placeholder="Pilih Kategori" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem
+                          key={cat.id}
+                          value={cat.id.toString()}
+                        >
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {errors.category_id && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.category_id}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>SKU</Label>
+
+                  <Input
+                    value={data.sku}
+                    onChange={(e) =>
+                      setData('sku', e.target.value)
+                    }
                     className={
-                      errors.category_id
+                      errors.sku ? 'border-red-500' : ''
+                    }
+                  />
+
+                  {errors.sku && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.sku}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>Nama Produk</Label>
+
+                  <Input
+                    value={data.name}
+                    onChange={(e) =>
+                      setData('name', e.target.value)
+                    }
+                    className={
+                      errors.name ? 'border-red-500' : ''
+                    }
+                  />
+
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.name}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>Deskripsi</Label>
+
+                  <Textarea
+                    value={data.description}
+                    onChange={(e) =>
+                      setData('description', e.target.value)
+                    }
+                    className={
+                      errors.description
                         ? 'border-red-500'
                         : ''
                     }
-                  >
-                    <SelectValue placeholder="Pilih Kategori" />
-                  </SelectTrigger>
+                  />
 
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem
-                        key={cat.id}
-                        value={cat.id.toString()}
-                      >
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {errors.category_id && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.category_id}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>SKU</Label>
-
-                <Input
-                  value={data.sku}
-                  onChange={(e) =>
-                    setData('sku', e.target.value)
-                  }
-                  className={
-                    errors.sku ? 'border-red-500' : ''
-                  }
-                />
-
-                {errors.sku && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.sku}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Nama Produk</Label>
-
-                <Input
-                  value={data.name}
-                  onChange={(e) =>
-                    setData('name', e.target.value)
-                  }
-                  className={
-                    errors.name ? 'border-red-500' : ''
-                  }
-                />
-
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Deskripsi</Label>
-
-                <Textarea
-                  value={data.description}
-                  onChange={(e) =>
-                    setData('description', e.target.value)
-                  }
-                  className={
-                    errors.description
-                      ? 'border-red-500'
-                      : ''
-                  }
-                />
-
-                {errors.description && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.description}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Min Stok Level</Label>
-
-                <Input
-                  type="number"
-                  value={data.min_stock_level}
-                  onChange={(e) =>
-                    setData(
-                      'min_stock_level',
-                      e.target.value,
-                    )
-                  }
-                  className={
-                    errors.min_stock_level
-                      ? 'border-red-500'
-                      : ''
-                  }
-                />
-
-                {errors.min_stock_level && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.min_stock_level}
-                  </p>
-                )}
-              </div>
-
-              <div className="border-t pt-4 mt-4">
-                <Label>Upload Gambar Produk (Bisa lebih dari 1)</Label>
-                <Input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => setData('images', Array.from(e.target.files || []))}
-                  className="mt-2"
-                />
-                <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, WEBP (Max 2MB/file)</p>
-                {errors['images.0'] && <p className="mt-1 text-sm text-red-500">{errors['images.0']}</p>}
-
-                {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
-                  <div className="mt-4">
-                    <p className="mb-2 text-sm font-medium">Gambar Saat Ini:</p>
-                <div className="flex flex-wrap gap-3">
-                  {editingProduct.images.map((img) => (
-                    <div key={img.id} className="group relative rounded-md border p-1">
-                      <img 
-                        src={img.image_url} 
-                        alt="product" 
-                        className="h-20 w-20 rounded-sm object-cover" 
-                      />
-
-                      {img.is_primary && (
-                          <span className="absolute -left-2 -top-2 z-10 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
-                              Primary
-                          </span>
-                      )}
-                      
-                      <button
-                          type="button"
-                          onClick={() => deleteImage(img.id)}
-                          className="absolute -right-2 -top-2 z-10 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                  {errors.description && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.description}
+                    </p>
+                  )}
                 </div>
+
+                <div>
+                  <Label>Min Stok Level</Label>
+
+                  <Input
+                    type="number"
+                    value={data.min_stock_level}
+                    onChange={(e) =>
+                      setData(
+                        'min_stock_level',
+                        e.target.value,
+                      )
+                    }
+                    className={
+                      errors.min_stock_level
+                        ? 'border-red-500'
+                        : ''
+                    }
+                  />
+
+                  {errors.min_stock_level && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.min_stock_level}
+                    </p>
+                  )}
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <Label>Upload Gambar Produk (Bisa lebih dari 1)</Label>
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setData('images', Array.from(e.target.files || []))}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, WEBP (Max 2MB/file)</p>
+                  {errors['images.0'] && <p className="mt-1 text-sm text-red-500">{errors['images.0']}</p>}
+
+                  {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-sm font-medium">Gambar Saat Ini:</p>
+                  <div className="flex flex-wrap gap-3">
+                    {editingProduct.images.map((img) => (
+                      <div key={img.id} className="group relative rounded-md border p-1">
+                        <img 
+                          src={img.image_url} 
+                          alt="product" 
+                          className="h-20 w-20 rounded-sm object-cover" 
+                        />
+
+                        {img.is_primary && (
+                            <span className="absolute -left-2 -top-2 z-10 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
+                                Primary
+                            </span>
+                        )}
+                        
+                        <button
+                            type="button"
+                            onClick={() => deleteImage(img.id)}
+                            className="absolute -right-2 -top-2 z-10 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={processing}
-              >
-                {editingProduct
-                  ? 'Update Data'
-                  : 'Simpan Produk'}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={processing}
+                >
+                  {editingProduct
+                    ? 'Update Data'
+                    : 'Simpan Produk'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-      <div className="rounded-md border shadow-sm">
+      <div className="rounded-md border shadow-sm bg-white">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Gambar</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Nama</TableHead>
+              {/* Kolom SKU yang bisa di-sort */}
+              <TableHead 
+                className="cursor-pointer hover:bg-gray-50" 
+                onClick={() => handleSort('sku')}
+              >
+                <div className="flex items-center">
+                  SKU <ArrowUpDown className="ml-2 h-3 w-3" />
+                </div>
+              </TableHead>
+              {/* Kolom Nama yang bisa di-sort */}
+              <TableHead 
+                className="cursor-pointer hover:bg-gray-50" 
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center">
+                  Nama Produk <ArrowUpDown className="ml-2 h-3 w-3" />
+                </div>
+              </TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Min Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
-          </TableRow>
+            </TableRow>
           </TableHeader>
 
           <TableBody>
-            {products.map((prod) => (
+            {products.data.length > 0 ? products.data.map((prod) => (
               <TableRow key={prod.id}>
                 <TableCell>
                   {prod.images.length > 0 ? (
@@ -395,9 +505,38 @@ export default function ProductIndex({
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-gray-500">
+                  Data produk tidak ditemukan.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* KOMPONEN PAGINATION SEDERHANA */}
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          Menampilkan Halaman {products.current_page} dari {products.last_page}
+        </p>
+        <div className="flex space-x-2">
+          {products.links.map((link, index) => (
+            <Button
+              key={index}
+              variant={link.active ? "default" : "outline"}
+              size="sm"
+              disabled={!link.url}
+              onClick={() => {
+                if (link.url) {
+                  router.get(link.url, {}, { preserveState: true, preserveScroll: true });
+                }
+              }}
+              dangerouslySetInnerHTML={{ __html: link.label }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

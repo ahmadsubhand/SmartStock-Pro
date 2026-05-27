@@ -203,7 +203,7 @@ export default function SupplierIndex({
                 <TableCell className="font-semibold">{supp.name}</TableCell>
                 <TableCell>{supp.contact_person}</TableCell>
                 <TableCell>{supp.phone}</TableCell>
-                <TableCell className="max-w-[200px] truncate text-gray-500">
+                <TableCell className="max-w-50 truncate text-gray-500">
                   {supp.address}
                 </TableCell>
                 <TableCell className="space-x-2 text-right">
