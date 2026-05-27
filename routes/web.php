@@ -20,14 +20,19 @@ Route::inertia('/', 'welcome')->name('home');
 // UC1: AUTENTIKASI & AKTIVASI AKUN
 // Akses: Pengguna terautentikasi & tautan signed URL
 // ========================================================
-Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
-
 // Rute publik dengan signed URL untuk aktivasi akun
 Route::middleware('signed')->group(function () {
     Route::get('/activate-account/{user}', [AccountActivationController::class, 'show'])->name('account.activate.show');
     Route::post('/activate-account/{user}', [AccountActivationController::class, 'update'])->name('account.activate.update');
+});
+
+// ========================================================
+// UC2: MEMANTAU DASHBOARD DAN PETA
+// Akses: Admin, Manager, Staf
+// ========================================================
+// Rute publik dengan signed URL untuk aktivasi akun
+Route::middleware(['auth'])->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // =================================================================
@@ -41,8 +46,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // ========================================================
     // 1. SUPER ADMIN ONLY (Kelola Pengguna)
     Route::middleware(['role:admin'])->group(function () {
-        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
     // ========================================================

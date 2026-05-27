@@ -194,246 +194,247 @@ export default function ProductIndex({
   return (
     <div className="p-8">
       <Head title="Master Produk" />
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Master Produk</h1>
-            <p className="text-sm text-gray-500">Kelola katalog barang beserta gambarnya.</p>
-          </div>
-          <Button onClick={openAddModal}>
-            <Plus className="mr-2 h-4 w-4" /> Tambah Produk
-          </Button>
 
-          {/* BARIS OPTIMASI FILTER & PENCARIAN */}
-          <div className="mb-4 flex items-center justify-between gap-4 rounded-md border bg-white p-4 shadow-sm">
-            <div className="flex w-full max-w-sm items-center space-x-2">
-              <div className="relative w-full">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  type="text"
-                  placeholder="Cari SKU atau Nama Produk..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="flex w-full max-w-xs items-center space-x-2">
-              <Select 
-                value={selectedCategory} 
-                onValueChange={setSelectedCategory}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter Kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Kategori</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Master Produk</h1>
+          <p className="text-sm text-gray-500">Kelola katalog barang beserta gambarnya.</p>
+        </div>
+        <Button onClick={openAddModal}>
+          <Plus className="mr-2 h-4 w-4" /> Tambah Produk
+        </Button>
 
-          <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
+        <Dialog open={isOpen} onOpenChange={(open) => {
+          setIsOpen(open);
 
-            if (!open) {
-              reset(); setEditingProduct(null); 
-            } 
-          }}>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
-            </DialogHeader>
-              {/* Tambahkan encType="multipart/form-data" */}
-              <form onSubmit={submit} className="space-y-4" encType="multipart/form-data">
-                <div>
-                  <Label>Kategori</Label>
+          if (!open) {
+            reset(); setEditingProduct(null); 
+          } 
+        }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
+          </DialogHeader>
+            {/* Tambahkan encType="multipart/form-data" */}
+            <form onSubmit={submit} className="space-y-4" encType="multipart/form-data">
+              <div>
+                <Label>Kategori</Label>
 
-                  <Select
-                    value={data.category_id}
-                    onValueChange={(val) =>
-                      setData('category_id', val)
+                <Select
+                  value={data.category_id}
+                  onValueChange={(val) =>
+                    setData('category_id', val)
+                  }
+                >
+                  <SelectTrigger
+                    className={
+                      errors.category_id
+                        ? 'border-red-500'
+                        : ''
                     }
                   >
-                    <SelectTrigger
-                      className={
-                        errors.category_id
-                          ? 'border-red-500'
-                          : ''
-                      }
-                    >
-                      <SelectValue placeholder="Pilih Kategori" />
-                    </SelectTrigger>
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
 
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem
-                          key={cat.id}
-                          value={cat.id.toString()}
-                        >
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {errors.category_id && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.category_id}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>SKU</Label>
-
-                  <Input
-                    value={data.sku}
-                    onChange={(e) =>
-                      setData('sku', e.target.value)
-                    }
-                    className={
-                      errors.sku ? 'border-red-500' : ''
-                    }
-                  />
-
-                  {errors.sku && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.sku}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Nama Produk</Label>
-
-                  <Input
-                    value={data.name}
-                    onChange={(e) =>
-                      setData('name', e.target.value)
-                    }
-                    className={
-                      errors.name ? 'border-red-500' : ''
-                    }
-                  />
-
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.name}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Deskripsi</Label>
-
-                  <Textarea
-                    value={data.description}
-                    onChange={(e) =>
-                      setData('description', e.target.value)
-                    }
-                    className={
-                      errors.description
-                        ? 'border-red-500'
-                        : ''
-                    }
-                  />
-
-                  {errors.description && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.description}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Min Stok Level</Label>
-
-                  <Input
-                    type="number"
-                    value={data.min_stock_level}
-                    onChange={(e) =>
-                      setData(
-                        'min_stock_level',
-                        e.target.value,
-                      )
-                    }
-                    className={
-                      errors.min_stock_level
-                        ? 'border-red-500'
-                        : ''
-                    }
-                  />
-
-                  {errors.min_stock_level && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.min_stock_level}
-                    </p>
-                  )}
-                </div>
-
-                <div className="border-t pt-4 mt-4">
-                  <Label>Upload Gambar Produk (Bisa lebih dari 1)</Label>
-                  <Input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => setData('images', Array.from(e.target.files || []))}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, WEBP (Max 2MB/file)</p>
-                  {errors['images.0'] && <p className="mt-1 text-sm text-red-500">{errors['images.0']}</p>}
-
-                  {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
-                    <div className="mt-4">
-                      <p className="mb-2 text-sm font-medium">Gambar Saat Ini:</p>
-                  <div className="flex flex-wrap gap-3">
-                    {editingProduct.images.map((img) => (
-                      <div key={img.id} className="group relative rounded-md border p-1">
-                        <img 
-                          src={img.image_url} 
-                          alt="product" 
-                          className="h-20 w-20 rounded-sm object-cover" 
-                        />
-
-                        {img.is_primary && (
-                            <span className="absolute -left-2 -top-2 z-10 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
-                                Primary
-                            </span>
-                        )}
-                        
-                        <button
-                            type="button"
-                            onClick={() => deleteImage(img.id)}
-                            className="absolute -right-2 -top-2 z-10 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem
+                        key={cat.id}
+                        value={cat.id.toString()}
+                      >
+                        {cat.name}
+                      </SelectItem>
                     ))}
-                  </div>
-                    </div>
-                  )}
-                </div>
+                  </SelectContent>
+                </Select>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={processing}
-                >
-                  {editingProduct
-                    ? 'Update Data'
-                    : 'Simpan Produk'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                {errors.category_id && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.category_id}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>SKU</Label>
+
+                <Input
+                  value={data.sku}
+                  onChange={(e) =>
+                    setData('sku', e.target.value)
+                  }
+                  className={
+                    errors.sku ? 'border-red-500' : ''
+                  }
+                />
+
+                {errors.sku && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.sku}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Nama Produk</Label>
+
+                <Input
+                  value={data.name}
+                  onChange={(e) =>
+                    setData('name', e.target.value)
+                  }
+                  className={
+                    errors.name ? 'border-red-500' : ''
+                  }
+                />
+
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.name}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Deskripsi</Label>
+
+                <Textarea
+                  value={data.description}
+                  onChange={(e) =>
+                    setData('description', e.target.value)
+                  }
+                  className={
+                    errors.description
+                      ? 'border-red-500'
+                      : ''
+                  }
+                />
+
+                {errors.description && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.description}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Min Stok Level</Label>
+
+                <Input
+                  type="number"
+                  value={data.min_stock_level}
+                  onChange={(e) =>
+                    setData(
+                      'min_stock_level',
+                      e.target.value,
+                    )
+                  }
+                  className={
+                    errors.min_stock_level
+                      ? 'border-red-500'
+                      : ''
+                  }
+                />
+
+                {errors.min_stock_level && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.min_stock_level}
+                  </p>
+                )}
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <Label>Upload Gambar Produk (Bisa lebih dari 1)</Label>
+                <Input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setData('images', Array.from(e.target.files || []))}
+                  className="mt-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, WEBP (Max 2MB/file)</p>
+                {errors['images.0'] && <p className="mt-1 text-sm text-red-500">{errors['images.0']}</p>}
+
+                {editingProduct && editingProduct.images && editingProduct.images.length > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-sm font-medium">Gambar Saat Ini:</p>
+                <div className="flex flex-wrap gap-3">
+                  {editingProduct.images.map((img) => (
+                    <div key={img.id} className="group relative rounded-md border p-1">
+                      <img 
+                        src={img.image_url} 
+                        alt="product" 
+                        className="h-20 w-20 rounded-sm object-cover" 
+                      />
+
+                      {img.is_primary && (
+                          <span className="absolute -left-2 -top-2 z-10 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
+                              Primary
+                          </span>
+                      )}
+                      
+                      <button
+                          type="button"
+                          onClick={() => deleteImage(img.id)}
+                          className="absolute -right-2 -top-2 z-10 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                  </div>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={processing}
+              >
+                {editingProduct
+                  ? 'Update Data'
+                  : 'Simpan Produk'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* BARIS OPTIMASI FILTER & PENCARIAN */}
+      <div className="mb-4 flex items-center justify-between gap-4 rounded-md border bg-white p-4 shadow-sm">
+        <div className="flex w-full max-w-sm items-center space-x-2">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Cari SKU atau Nama Produk..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
+        
+        <div className="flex max-w-xs items-center space-x-2">
+          <Select 
+            value={selectedCategory} 
+            onValueChange={setSelectedCategory}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter Kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Kategori</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="rounded-md border shadow-sm bg-white">
         <Table>
@@ -515,6 +516,7 @@ export default function ProductIndex({
           </TableBody>
         </Table>
       </div>
+      
 
       {/* KOMPONEN PAGINATION SEDERHANA */}
       <div className="mt-4 flex items-center justify-between">
