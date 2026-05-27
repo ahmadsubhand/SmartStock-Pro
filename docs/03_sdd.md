@@ -143,51 +143,52 @@ Sistem menggunakan PostgreSQL 16 sebagai RDBMS utama karena memiliki dukungan tr
 
 ## 3.3 ERD (Entity Reational Database)
 
-### 1. Domain Autentikasi & Otorisasi (RBAC)
-Tabel-tabel ini menangani akses pengguna dan pengaturan hak istimewa (*Role-Based Access Control*).
+![Entity Reational Database](./images/erd.png)
 
-* **`users`**: Menyimpan data akun pengguna, kredensial login, status aktif/non-aktif, serta rekaman waktu login terakhir.
-* **`roles`**: Mendefinisikan peran yang ada dalam sistem (contoh: Super Admin, Manajer Gudang, Staff Operasional).
-* **`permissions`**: Mendefinisikan hak akses spesifik atau tindakan yang boleh dilakukan (contoh: `create-product`, `approve-transfer`).
-* **`model_has_roles`**: Tabel pivot yang menghubungkan pengguna (user) dengan peran (role) tertentu.
+### 1. Domain Autentikasi & Otorisasi (RBAC)
+Tabel-tabel ini menangani akses pengguna, pengaturan hak istimewa (*Role-Based Access Control*), dan status kepegawaian.
+
+* **`users`**: Menyimpan data akun pengguna, kredensial login, status aktif/non-aktif (`is_active`), serta rekaman waktu login terakhir (`last_login_at`).
+* **`roles`**: Mendefinisikan peran yang ada dalam sistem dengan batasan *guard* (contoh: Admin, Staff, Manager).
+* **`permissions`**: Mendefinisikan hak akses spesifik atau tindakan yang boleh dilakukan secara granular.
+* **`model_has_roles`**: Tabel pivot polimorfik yang menghubungkan model (pengguna) dengan peran (role) tertentu.
 * **`role_has_permissions`**: Tabel pivot yang menghubungkan sebuah peran (role) dengan daftar hak akses (permissions) yang dimilikinya.
-* **`sessions`** & **`password_reset_tokens`**: Tabel sistem Laravel untuk mengelola *session* (mencegah multi-login / mengatur *timeout*) dan token reset *password*.
 
 ### 2. Domain Master Data
-Tabel-tabel ini menyimpan data referensi yang digunakan sebagai landasan untuk transaksi operasional.
+Tabel-tabel ini menyimpan data referensi fundamental dan katalog yang digunakan sebagai landasan untuk seluruh transaksi operasional.
 
-* **`warehouses`**: Menyimpan daftar fasilitas gudang beserta informasi alamat, status aktif, dan titik koordinat (Latitude/Longitude) untuk ditampilkan di Peta/Leaflet.
-* **`categories`**: Menyimpan data klasifikasi atau pengelompokan untuk produk.
-* **`suppliers`**: Menyimpan informasi entitas atau vendor yang memasok barang ke dalam sistem.
+* **`warehouses`**: Menyimpan daftar fasilitas gudang beserta informasi alamat, status aktif, dan titik koordinat (`latitude`, `longitude`) untuk ditampilkan di antarmuka peta (Leaflet/Maps).
+* **`categories`**: Menyimpan data klasifikasi atau pengelompokan hierarki untuk produk.
+* **`suppliers`**: Menyimpan informasi entitas, kontak detail, dan alamat vendor yang memasok barang ke dalam sistem.
+* **`products`**: Menyimpan data inti/katalog barang (SKU unik, nama, deskripsi) serta batas peringatan stok minimal (`min_stock_level`) yang akan memicu *alert* otomatis.
+* **`product_images`**: Menyimpan *path* atau URL ke file gambar produk, mendukung banyak gambar per produk dengan satu tanda utama (`is_primary`).
 
-### 3. Domain Produk
-Tabel-tabel ini mengelola katalog barang yang ada di sistem.
+### 3. Domain Inventaris & Transaksi
+Tabel-tabel ini merekam semua pergerakan logistik (masuk, keluar, pindah) serta menangani ketersediaan barang aktual dan perhitungan nilai valuasi.
 
-* **`products`**: Menyimpan data inti/katalog barang (SKU, nama, deskripsi) serta batas peringatan stok (`min_stock_level`).
-* **`product_images`**: Menyimpan *path* atau URL ke file gambar dari suatu produk untuk ditampilkan pada galeri antarmuka pengguna.
+* **`transactions`**: Mencatat *header* dari aktivitas mutasi barang di satu gudang, menggunakan batasan ENUM untuk jenis transaksi (`in`, `out`, `adjustment`).
+* **`transaction_details`**: Menyimpan daftar barang, kuantitas, dan harga modal (HPP) untuk setiap baris transaksi.
+* **`transfers`**: Mencatat proses perpindahan barang antar-gudang (Gudang Asal ke Tujuan), dilacak menggunakan status ENUM (`pending`, `in_transit`, `completed`, `failed`), beserta pencatatan waktu pengiriman dan penerimaan.
+* **`transfer_details`**: Menyimpan rincian item (produk dan kuantitas) yang dipindahkan dalam sebuah *transfer*.
+* **`inventory_batches`**: Jantung dari sistem metode HPP (FIFO/LIFO). Setiap barang masuk akan menjadi satu *batch*. Tabel ini melacak kuantitas awal, kuantitas tersisa (`remaining_qty`), dan harga unit (HPP) berdasarkan waktu terjadinya *batch*.
+* **`stock_summaries`**: *Materialized view* (Tabel Agregat) yang berfungsi menjumlahkan total keseluruhan barang per gudang untuk mempercepat performa *rendering* di *Dashboard* dan *List Produk*.
 
-### 4. Domain Transaksi & Mutasi Barang
-Tabel-tabel ini merekam semua pergerakan (masuk, keluar, pindah) dari inventaris.
+### 4. Domain Background Jobs & Telemetry (Audit)
+Tabel ini digunakan untuk mencatat jejak perubahan sistem yang esensial.
 
-* **`transactions`**: Mencatat *header* dari aktivitas mutasi barang di satu gudang, baik itu barang masuk (`in`), barang keluar (`out`), atau penyesuaian stok (`adjustment`).
-* **`transaction_details`**: Menyimpan daftar barang, kuantitas, dan harga modal (jika masuk) untuk setiap transaksi.
-* **`transfers`**: Mencatat proses pergerakan barang antar-gudang (misal: Gudang A ke Gudang B), termasuk melacak status perjalanannya (`pending`, `in_transit`, `completed`).
-* **`transfer_details`**: Menyimpan rincian item dan jumlah barang yang dipindahkan dalam sebuah *transfer*.
+* **`audit_logs`**: Merekam jejak audit teknis tingkat rendah atas setiap perubahan data (*created, updated, deleted*), menyimpan nilai JSON lama (`old_values`) dan nilai JSON baru (`new_values`), serta IP Address pelaku.
 
-### 5. Domain Inventaris & Stok (Core WMS)
-Tabel-tabel ini menangani ketersediaan barang aktual dan perhitungan nilai valuasi.
+### 5. Domain Notifikasi
+Sistem notifikasi asinkron untuk pengguna sistem.
 
-* **`inventory_batches`**: Jantung dari sistem metode *First In First Out* (FIFO) atau LIFO. Setiap barang masuk akan menjadi satu baris (batch) di sini. Tabel ini melacak harga modal awal dan secara perlahan mengurangi `remaining_qty` setiap kali ada barang keluar.
-* **`stock_summaries`**: Berfungsi sebagai *Materialized View* atau tabel agregasi. Tabel ini menjumlahkan total keseluruhan barang per gudang untuk mempercepat tampilan di *Dashboard* tanpa harus menghitung ulang tabel *batch* yang jumlah datanya bisa jutaan baris.
+* **`notifications`**: Tabel sistem berbasis `UUID` bawaan Laravel yang memuat *alert* dari sistem (misal: stok menipis, notifikasi pengiriman tiba, laporan selesai). Menyimpan data secara dinamis (JSON) dan menandai waktu baca (`read_at`).
 
-### 6. Domain Antrean (Queue) & Sistem Bawah Layar
-Tabel-tabel infrastruktur bawaan Laravel untuk memastikan performa yang tinggi.
+### 6. Domain Export Laporan
+Tabel yang dirancang untuk arsitektur *Enterprise* guna menghindari masalah koneksi terputus saat memproses data jutaan baris.
 
-* **`jobs`**, **`job_batches`**, **`failed_jobs`**: Digunakan oleh Laravel Queue/Worker. Berfungsi sebagai antrean tugas-tugas berat agar berjalan secara paralel (seperti sinkronisasi antar-gudang, *batch import* CSV, dan *generate* PDF laporan).
-* **`cache`**, **`cache_locks`**: Menyimpan *cache* sistem dan mengelola penguncian (*locking*) proses agar tidak terjadi *race condition* atau data ganda saat beberapa *worker* berjalan di waktu bersamaan.
+* **`export_documents`**: Melacak antrean tugas pembuatan laporan dalam format PDF atau Excel. Menggunakan ENUM status (`pending`, `processing`, `completed`, `failed`), dan akan menyimpan rute unduhan (`file_path`) setelah *worker* selesai memproses datanya di latar belakang.
 
-### 7. Domain Log & Notifikasi
-Tabel-tabel untuk kebutuhan audit dan pemberian peringatan.
+### 7. Domain Activity Log (System Event)
+Sistem pelacakan *User Behavior* terstruktur.
 
-* **`audit_logs`**: Merekam jejak setiap perubahan data (siapa yang mengubah, kapan, perubahan nilai sebelum vs sesudah). Sangat krusial untuk pelacakan jika terjadi selisih stok.
-* **`notifications`**: Menyimpan pesan-pesan penting dari sistem untuk dikirim/ditampilkan ke pengguna (*in-app notification*), seperti saat ada produk yang stoknya sudah menyentuh batas minimum.
+* **`activity_log`**: Merekam interaksi dan tindakan (event) operasional dalam aplikasi secara semantik. Memisahkan antara entitas yang terdampak (`subject_type/id`) dan pelaku yang melakukannya (`causer_type/id`), dilengkapi metadata JSON tambahan untuk keperluan *troubleshooting* atau laporan manajerial.
